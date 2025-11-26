@@ -1,5 +1,8 @@
 <template>
   <div class="flex h-screen bg-[#0a0a0b] text-gray-200 font-sans">
+    <!-- Command Menu -->
+    <CommandMenu :show="showCommandMenu" @close="showCommandMenu = false" />
+
     <!-- Sidebar -->
     <aside v-show="sidebarOpen" class="w-56 shrink-0 border-r border-gray-800/50 flex flex-col">
       <!-- Logo -->
@@ -122,7 +125,10 @@
               />
             </svg>
           </button>
-          <button class="p-1.5 hover:bg-gray-800 rounded text-gray-500 hover:text-gray-300">
+          <button
+            class="p-1.5 hover:bg-gray-800 rounded text-gray-500 hover:text-red-400"
+            @click="deleteSelectedNote"
+          >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 stroke-linecap="round"
@@ -231,7 +237,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import CommandMenu from '@/components/CommandMenu.vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 interface Note {
   id: string
@@ -241,6 +251,7 @@ interface Note {
   updatedAt: Date
 }
 
+const showCommandMenu = ref(false)
 const sidebarOpen = ref(localStorage.getItem('notta-sidebar-open') !== 'false')
 
 watch(sidebarOpen, (isOpen) => {
@@ -377,14 +388,59 @@ const updateNote = (): void => {
   }
 }
 
-onMounted(() => {
-  if (notes.value.length > 0) {
-    selectedNote.value = notes.value[0] ?? null
+const deleteSelectedNote = (): void => {
+  if (selectedNote.value) {
+    const index = notes.value.findIndex((n) => n.id === selectedNote.value?.id)
+    notes.value = notes.value.filter((n) => n.id !== selectedNote.value?.id)
+    // Select next note or previous if at end
+    if (notes.value.length > 0) {
+      const newIndex = Math.min(index, notes.value.length - 1)
+      selectedNote.value = notes.value[newIndex] ?? null
+    } else {
+      selectedNote.value = null
+    }
   }
-})
+}
 
-// Keyboard shortcut for new note
+let lastKeyTime = 0
+let lastKey = ''
+
 const handleKeydown = (e: KeyboardEvent): void => {
+  const now = Date.now()
+
+  // G + key shortcuts (must press within 500ms)
+  if (lastKey === 'g' && now - lastKeyTime < 500) {
+    if (e.key === 'n') {
+      e.preventDefault()
+      router.push('/notes')
+      lastKey = ''
+      return
+    }
+    if (e.key === 't') {
+      e.preventDefault()
+      router.push('/')
+      lastKey = ''
+      return
+    }
+    if (e.key === 'r') {
+      e.preventDefault()
+      router.push('/reminders')
+      lastKey = ''
+      return
+    }
+  }
+
+  // Track 'g' key press
+  if (e.key === 'g' && !e.ctrlKey && !e.metaKey) {
+    lastKey = 'g'
+    lastKeyTime = now
+    return
+  }
+
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault()
+    showCommandMenu.value = !showCommandMenu.value
+  }
   if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
     e.preventDefault()
     addNote()
@@ -392,10 +448,12 @@ const handleKeydown = (e: KeyboardEvent): void => {
 }
 
 onMounted(() => {
+  if (notes.value.length > 0) {
+    selectedNote.value = notes.value[0] ?? null
+  }
   window.addEventListener('keydown', handleKeydown)
 })
 
-import { onUnmounted } from 'vue'
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
 })
