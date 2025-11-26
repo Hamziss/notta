@@ -1,14 +1,14 @@
 # Notta
 
-A simple productivity app with a kanban board and notes. Built with Vue 3 + TypeScript + Tailwind CSS.
+A simple task manager app I use at work and enhance over time with my personal needs
 
-## Features
+## Features (this is a WIP)
 
 - **Kanban board** - drag and drop tasks between columns (Todo, In Progress, Completed, Paused)
 - **Notes** - Mac Notes-style interface with date grouping
 - Command menu (`Cmd+K`) for quick navigation
 - Keyboard shortcuts: `G T` (tasks), `G N` (notes), `Ctrl+N` (new item)
-- Dark theme, data saved to localStorage
+- data saved to localStorage
 
 ## Run it
 
